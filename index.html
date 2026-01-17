@@ -2,16 +2,107 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <!-- Meta refresh fallback -->
-    <meta http-equiv="refresh" content="0; url=https://dumi.example/REPLACE_ME" />
-    <link rel="canonical" href="https://dumi.example/REPLACE_ME" />
     <title>Redirecting…</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <style>
+      body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; padding: 2rem; line-height:1.6; color:#111; }
+      a { color: #0366d6; }
+      .notice { margin-top: 1rem; background:#f6f8fa; padding:1rem; border-radius:6px; }
+    </style>
     <script>
-      // Replace current history entry so the back button doesn't loop.
-      window.location.replace("https://dumi.example/REPLACE_ME");
+      (function () {
+        // Mapping from numeric id -> target URL (replace these with your Dumi links)
+        const redirects = {
+          "1": "https://dumi.example/project/doc/1",
+          "2": "https://dumi.example/project/doc/2",
+          "3": "https://dumi.example/project/doc/3"
+          // add more mappings as needed
+        };
+
+        // Helper: parse numeric id from various URL forms
+        function parseId() {
+          const url = new URL(window.location.href);
+
+          // 1) query params: ?num=2 or ?n=2
+          const q = url.searchParams.get('num') || url.searchParams.get('n');
+          if (q && /^\d+$/.test(q)) return q;
+
+          // 2) fragment/hash: #2
+          if (url.hash) {
+            const h = url.hash.replace(/^#/, '');
+            if (/^\d+$/.test(h)) return h;
+          }
+
+          // 3) path segments: /2  or /num/2
+          const pathParts = url.pathname.split('/').filter(Boolean);
+          if (pathParts.length) {
+            // last segment if numeric
+            const last = pathParts[pathParts.length - 1];
+            if (/^\d+$/.test(last)) return last;
+            // look for 'num' or 'id' segment followed by number
+            for (let i = 0; i < pathParts.length - 1; i++) {
+              if (/^num$|^id$|^n$/i.test(pathParts[i]) && /^\d+$/.test(pathParts[i + 1])) {
+                return pathParts[i + 1];
+              }
+            }
+          }
+          return null;
+        }
+
+        // Perform redirect with JS and add meta-refresh fallback
+        function doRedirect(target) {
+          // Add a meta refresh fallback (for non-JS or slow clients)
+          try {
+            const meta = document.createElement('meta');
+            meta.httpEquiv = 'refresh';
+            meta.content = '0; url=' + target;
+            document.getElementsByTagName('head')[0].appendChild(meta);
+          } catch (e) { /* ignore */ }
+
+          // Use replace so back button doesn't loop
+          window.location.replace(target);
+        }
+
+        // Run
+        const id = parseId();
+        if (id && redirects[id]) {
+          doRedirect(redirects[id]);
+        } else if (id && !redirects[id]) {
+          // unknown id: show friendly message and a list of available ids
+          document.addEventListener('DOMContentLoaded', () => {
+            document.body.innerHTML = `
+              <h1>Redirect target not found</h1>
+              <p>No redirect is configured for id <strong>${id}</strong>.</p>
+              <div class="notice">
+                <p>Configured ids:</p>
+                <ul>${Object.keys(redirects).map(k => `<li><a href="?num=${k}">?num=${k}</a> → <a href="${redirects[k]}">${redirects[k]}</a></li>`).join('')}</ul>
+              </div>
+              <p>If you expected this to redirect, ensure the mapping for <code>${id}</code> exists in <code>index.html</code>.</p>
+            `;
+          });
+        } else {
+          // no id provided: show instructions
+          document.addEventListener('DOMContentLoaded', () => {
+            document.body.innerHTML = `
+              <h1>Receipt redirect</h1>
+              <p>To be redirected, append a numeric id. Examples:</p>
+              <ul>
+                <li><a href="?num=2">?num=2</a></li>
+                <li><a href="/2">/2</a></li>
+                <li><a href="#3">#3</a></li>
+              </ul>
+              <p>Replace the mapping in <code>index.html</code> with your Dumi URLs.</p>
+              <div class="notice">
+                <p>Configured ids:</p>
+                <ul>${Object.keys(redirects).map(k => `<li><a href="?num=${k}">?num=${k}</a> → <a href="${redirects[k]}">${redirects[k]}</a></li>`).join('')}</ul>
+              </div>
+            `;
+          });
+        }
+      })();
     </script>
   </head>
   <body>
-    <p>Redirecting to <a href="https://dumi.example/REPLACE_ME">https://dumi.example/REPLACE_ME</a>. If you are not redirected, click the link.</p>
+    <p>Redirecting… If nothing happens, use the links below.</p>
   </body>
 </html>
